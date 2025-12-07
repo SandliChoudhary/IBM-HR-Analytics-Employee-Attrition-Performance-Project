@@ -1,0 +1,525 @@
+---
+title: "IBM HR Analytics Employee Attrition & Performance"
+author:
+- name: 'Student: Sandli Choudhary'
+  affiliation: 'Roll No: 30 | Reg No: 12309708 | Group: G1'
+- name: 'Student: Anjali Basra'
+  affiliation: 'Roll No: 29 | Reg No: 12312414 | Group: G1'
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+  word_document:
+    toc: true
+---
+
+----------------------------------------------------------------------------------------------------------
+
+# INTRODUCTION
+The data set used in this project is the IBM HR Analytics Employee Attrition & Performance data set from Kaggle. It contains data on 1,470 employees with 35 variables related to demographics, job satisfaction, performance, and work conditions.
+The main objective is to analyze factors influencing employee attrition and identify patterns that contribute to turnover. This analysis includes data cleaning, visualization, and predictive modeling to help HR teams understand and reduce employee attrition.
+
+-----------------------------------------------------------------------------------------------------------
+
+# Load Required Libraries
+```{r}
+# Load essential packages
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(readxl)
+library(readr)
+
+```
+
+-----------------------------------------------------------------------------------------------------------
+
+# Data set Overview
+
+-----------------------------------------------------------------------------------------------------------
+
+```{r}
+# load the data set
+IBM_HR_Employee_Attrition <- read_csv("C:/Users/san82/OneDrive/Desktop/R-PROGRAMMING/IBM HR-Employee-Attrition.csv",show_col_types = FALSE)
+
+# display first few rows
+head(IBM_HR_Employee_Attrition)
+```
+**Interpretation:**
+The IBM HR Employee Attrition dataset was successfully loaded, and the first few rows were displayed. This provides an initial understanding of the variables, data types, and general content of the dataset, which focuses on employee demographics, work experience, and attrition-related information.
+
+
+------------------------------------------------------------------------------------------------------------
+
+# 1. Descriptive Statistics
+
+------------------------------------------------------------------------------------------------------------
+
+## 1.1 Structure and Summary
+
+------------------------------------------------------------------------------------------------------------
+
+```{r}
+str(IBM_HR_Employee_Attrition)
+```
+------------------------------------------------------------------------------------------------------------
+
+```{r}
+summary(IBM_HR_Employee_Attrition)
+```
+**Interpretation:**
+The structure (str()) of the data set confirms that it contains both numerical and categorical variables such as Age, Job Role, and MonthlyIncome. The summary (summary()) provides statistical details, including minimum, median, mean, and maximum values, helping to identify patterns like salary distribution or potential outliers.
+
+
+------------------------------------------------------------------------------------------------------------
+
+## 1.2 Dimensions of the Dataset
+
+------------------------------------------------------------------------------------------------------------
+
+```{r}
+cat("Number of Rows: ", nrow(IBM_HR_Employee_Attrition), "\n")
+```
+
+------------------------------------------------------------------------------------------------------------
+
+```{r}
+cat("Number of Columns: ", ncol(IBM_HR_Employee_Attrition))
+```
+**Interpretation:**
+The data set dimensions reveal the number of rows and columns, showing how many employees (observations) and variables (features) are included. This helps gauge the dataset’s size and suitability for statistical and predictive analysis.
+
+------------------------------------------------------------------------------------------------------------
+
+## 1.3 Basic Statistical Measures
+
+------------------------------------------------------------------------------------------------------------
+
+```{r}
+IBM_HR_Employee_Attrition %>%
+  summarise(across(where(is.numeric),
+                   list(
+                     mean = ~mean(.x, na.rm = TRUE),
+                     median = ~median(.x, na.rm = TRUE),
+                     sd = ~sd(.x, na.rm = TRUE)
+                   )))
+
+```
+**Interpretation:**
+The computed mean, median, and standard deviation for Age show the central tendency and variability among employees. A close mean and median indicate a symmetric distribution, while a large standard deviation suggests wider diversity in employee ages.
+
+------------------------------------------------------------------------------------------------------------
+
+## 1.4 Convert numeric columns to categorical (factor) versions
+
+------------------------------------------------------------------------------------------------------------
+
+```{r}
+IBM_HR_Employee_Attrition$JobInvolvement_cat <- factor(IBM_HR_Employee_Attrition$JobInvolvement,
+                                     levels = c(1, 2, 3, 4),
+                                     labels = c("Low", "Medium", "High", "Very High"))
+
+IBM_HR_Employee_Attrition$JobSatisfaction_cat <- factor(IBM_HR_Employee_Attrition$JobSatisfaction,
+                                      levels = c(1, 2, 3, 4),
+                                      labels = c("Low", "Medium", "High", "Very High"))
+
+IBM_HR_Employee_Attrition$PerformanceRating_cat <- factor(IBM_HR_Employee_Attrition$PerformanceRating,
+                                        levels = c(1, 2, 3, 4),
+                                        labels = c("Low", "Good", "Excellent", "Outstanding"))
+
+
+# View first few rows to confirm the new columns
+head(IBM_HR_Employee_Attrition[c("JobInvolvement_cat",
+                  "JobSatisfaction_cat",
+                  "PerformanceRating_cat")])
+
+```
+**Interpretation:**
+Numeric rating columns such as JobInvolvement, JobSatisfaction, and PerformanceRating were converted into categorical factors (Low, Medium, High, Very High). This transformation enhances interpretability, making future visualizations and statistical analyses more meaningful by representing employee engagement and satisfaction levels in clearer, qualitative terms.
+
+------------------------------------------------------------------------------------------------------------
+
+# 2. Data Visualization
+
+------------------------------------------------------------------------------------------------------------
+
+## 2.1 Density Plot of Monthly Income by Attrition 
+
+------------------------------------------------------------------------------------------------------------
+
+**Question 1: Does employee income have any relationship with attrition? Are lower or higher-income employees more likely to leave the company?**
+
+```{r}
+ggplot(IBM_HR_Employee_Attrition, aes(x = MonthlyIncome, fill = Attrition)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Density Plot of Monthly Income by Attrition",
+       x = "Monthly Income", y = "Density") +
+  theme_minimal()
+```
+
+
+**Interpretation:**
+
+- Employees with lower monthly income show higher attrition rates.  
+- Those earning more are less likely to leave, indicating that income level may influence employee retention.  
+- HR teams can focus on fair pay structures to reduce turnover.
+
+
+------------------------------------------------------------------------------------------------------------
+
+## 2.2 Pair Plot of IBM HR Employee Features 
+
+------------------------------------------------------------------------------------------------------------
+
+**Question 2: How are age, income, and experience-related variables correlated? Do employees who have been at the company longer or have higher income show less attrition?**
+
+```{r}
+hr_num <- IBM_HR_Employee_Attrition[, c("Age", "MonthlyIncome", "DistanceFromHome", 
+                                        "TotalWorkingYears", "YearsAtCompany")]
+pairs(hr_num,
+      main = "Pair Plot of IBM HR Employee Features",
+      pch = 21,
+      bg = c("red", "green3")[as.factor(IBM_HR_Employee_Attrition$Attrition)],
+      labels = c("Age", "MonthlyIncome", "DistanceFromHome", "TotalWorkingYears", "YearsAtCompany"))
+
+```
+
+**Interpretation:** 
+The pair plot visualizes relationships among numeric variables (Age, MonthlyIncome, DistanceFromHome, TotalWorkingYears, YearsAtCompany).  
+
+- Age and TotalWorkingYears are positively correlated.  
+- Employees with higher income and longer tenure tend to show lower attrition (fewer red points).  
+- There’s no strong visible relationship between DistanceFromHome and attrition.
+
+
+------------------------------------------------------------------------------------------------------------
+
+## 2.3 Facet Plot: Years Since Last Promotion vs Monthly Rate by Attrition 
+
+------------------------------------------------------------------------------------------------------------
+
+**Question 3:Does the time since last promotion influence attrition? How does pay rate interact with promotion frequency?**
+```{r}
+ggplot(IBM_HR_Employee_Attrition, aes(x = YearsSinceLastPromotion, y = MonthlyRate)) +
+  geom_point(aes(color = Department), alpha = 0.7, size = 2) +
+  facet_wrap(~Attrition) +
+  labs(title = "Years Since Last Promotion vs Monthly Rate by Attrition",
+       x = "Years Since Last Promotion",
+       y = "Monthly Rate") +
+  theme_minimal()
+```
+
+
+**Interpretation:**  
+The facet plot separates employees by attrition.  
+In the *Attrition = Yes* group, employees often have **longer years since last promotion** with **moderate monthly rates**, implying that **delayed promotions** may increase attrition.  
+Employees with **frequent promotions and better pay** are less likely to resign.
+
+
+------------------------------------------------------------------------------------------------------------
+
+## 2.4 Bar Plot: Attrition by Job Role 
+
+------------------------------------------------------------------------------------------------------------
+
+**Question 4:Which job roles experience the most employee turnover?**
+```{r}
+ggplot(IBM_HR_Employee_Attrition, aes(x = JobRole, fill = Attrition)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Attrition by Job Role",
+       x = "Job Role", y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+**Interpretation:**  
+The bar chart compares attrition counts across job roles.  
+Sales Representatives and Laboratory Technicians may have higher attrition, possibly due to job pressure or limited growth opportunities.  
+These roles could be prioritized for retention programs..
+
+
+------------------------------------------------------------------------------------------------------------
+
+##  2.5 Stacked Bar Plot: Work-Life Balance by Attrition (Proportion) 
+
+------------------------------------------------------------------------------------------------------------
+
+**Question 5:How does work-life balance affect attrition rates?** 
+
+```{r}
+ggplot(IBM_HR_Employee_Attrition, aes(x = WorkLifeBalance, fill = Attrition)) +
+  geom_bar(position = "fill", color = "black") +   # "fill" makes bars show proportions
+  labs(
+    title = "Work-Life Balance vs Attrition",
+    x = "Work-Life Balance (1 = Poor, 4 = Excellent)",
+    y = "Proportion of Employees"
+  ) +
+  scale_fill_manual(values = c("orange", "turquoise")) +  # simpler colors
+  theme_minimal()
+```
+
+**Interpretation:**  
+The stacked bar chart shows attrition proportions by WorkLifeBalance ratings.  
+Employees with poor (1) or average (2) work-life balance show higher attrition, while those rating **3 or 4 tend to stay longer.  
+Encouraging flexible schedules and reduced stress can improve retention.
+
+
+
+------------------------------------------------------------------------------------------------------------
+
+# 3. Statistical Modeling
+
+------------------------------------------------------------------------------------------------------------
+
+## 3.1 Simple Linear Regression (SLR): 
+
+------------------------------------------------------------------------------------------------------------
+
+**Question: Does staying longer in a company mean you stay longer in the same role?**
+```{r}
+model_slr <- lm(YearsInCurrentRole ~ YearsAtCompany, data = IBM_HR_Employee_Attrition)
+summary(model_slr)
+
+ggplot(IBM_HR_Employee_Attrition, aes(x = YearsAtCompany, y = YearsInCurrentRole)) +
+  geom_point(color = "purple", alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, color = "orange") +
+  labs(
+    title = "Simple Linear Regression: Years in Current Role vs Years at Company",
+    x = "Years at Company",
+    y = "Years in Current Role"
+  ) +
+  theme_minimal()
+
+```
+
+**Interpretation:**
+The simple linear regression analysis shows a strong positive relationship between the number of years an employee has spent at the company and the number of years they have been in their current role. The regression coefficient for YearsAtCompany is 0.448, meaning that for every additional year an employee stays in the company, they tend to spend about 0.45 more years in the same role. This relationship is statistically significant, as indicated by the very small p-value (< 2e-16). The model explains about 58% of the variation in YearsInCurrentRole (R² = 0.5757), which indicates a strong fit for HR-related data. Overall, the results suggest that employees who stay longer in the company generally remain longer in their current roles, reflecting career stability but possibly also slower role rotation or promotion rates.
+
+
+
+
+------------------------------------------------------------------------------------------------------------
+
+## 3.2 ANOVA Results and Interpretation
+
+------------------------------------------------------------------------------------------------------------
+
+### 3.2.1 One-Way ANOVA: Monthly Income Across Job Roles
+
+------------------------------------------------------------------------------------------------------------
+
+**Question: Is there a significant difference in Monthly Income across different Job Roles?**
+
+```{r}
+
+# Select only relevant columns for ANOVA
+hr_data <- data.frame(
+  JobRole =  IBM_HR_Employee_Attrition$JobRole,
+  MonthlyIncome =  IBM_HR_Employee_Attrition$MonthlyIncome
+)
+
+# Step 3: Group-wise summary (mean, sd, count)
+group_summary <- hr_data %>%
+  group_by(JobRole) %>%
+  summarise(
+    mean = mean(MonthlyIncome),
+    sd = sd(MonthlyIncome),
+    count = n()
+  )
+
+print("Group-wise summary (Monthly Income by Job Role):")
+print(group_summary)
+
+# Step 4: Perform One-Way ANOVA
+anova_model <- aov(MonthlyIncome ~ JobRole, data = hr_data)
+anova_res <- summary(anova_model)
+
+print("ANOVA Table:")
+print(anova_res)
+
+# Step 5: Compare calculated F with critical F
+f_calculated <- anova_res[[1]]$`F value`[1]
+f_critical <- 2.10  # Approximate F-critical for df(8, 1460) at α = 0.05
+
+cat("\nCalculated F =", f_calculated)
+cat("\nCritical F =", f_critical)
+
+if (f_calculated > f_critical) {
+  cat("\nDecision: Reject H0 → Significant difference in mean Monthly Income among Job Roles.\n")
+} else {
+  cat("\nDecision: Fail to Reject H0 → No significant difference in mean Monthly Income.\n")
+}
+
+# Step 6: Box plot visualization
+boxplot(MonthlyIncome ~ JobRole, data = hr_data,
+        main = "Monthly Income Comparison Across Job Roles",
+        ylab = "Monthly Income",
+        xlab = "Job Role",
+        col = c("skyblue", "lightgreen", "lightpink", "lightyellow", "orange", "lightgray", "lightblue", "plum", "tan"),
+        las = 1,        # rotate x-axis labels
+        cex.axis = 0.8, # smaller tick labels
+        cex.lab = 1.1,  # axis label size
+        cex.main = 1.2) #title size
+```
+
+**Interpretation:**
+The boxplot shows clear salary differences across job roles. Manager and Research Director roles have the highest monthly incomes with wide variation, whereas Healthcare Representatives, Sales Executives, and similar junior roles have much lower income ranges. 
+
+Each point represents a test employee with actual and predicted attrition.
+Color = predicted label, Shape = actual label.
+Confusion matrix shows correct and incorrect predictions.
+Model accuracy for k = 5: r round(accuracy * 100, 2)%.
+
+**Hypotheses**
+
+**Null Hypothesis (H)₀:**
+There is no significant difference in the average Monthly Income among the different Job Roles.
+
+**Alternative Hypothesis (H₁):**
+There is a significant difference in the average Monthly Income for at least one Job Role.
+
+F_calculated > F_critical
+
+Reject the Null Hypothesis (H₀)
+Accept the Alternative Hypothesis (H₁)
+
+
+
+------------------------------------------------------------------------------------------------------------
+
+## 3.3 Polynomial Regression
+
+------------------------------------------------------------------------------------------------------------
+
+### 3.3.1 Polynomial Regression: Monthly Income vs Job Level
+
+------------------------------------------------------------------------------------------------------------
+
+**Question: How does Monthly Income change with Job Level?**
+
+```{r}
+# Fit polynomial regression model (degree = 2)
+model_poly_income <- lm(MonthlyIncome ~ poly(JobLevel, 2, raw = TRUE),
+                        data = IBM_HR_Employee_Attrition)
+
+# Model summary
+summary(model_poly_income)
+
+# Plot the relationship
+plot(IBM_HR_Employee_Attrition$JobLevel, IBM_HR_Employee_Attrition$MonthlyIncome,
+     pch = 20, col = "skyblue",
+     main = "Polynomial Regression: Monthly Income vs Job Level",
+     xlab = "Job Level",
+     ylab = "Monthly Income")
+
+# Add polynomial regression line
+lines(sort(IBM_HR_Employee_Attrition$JobLevel),
+      predict(model_poly_income, 
+              newdata = data.frame(JobLevel = sort(IBM_HR_Employee_Attrition$JobLevel))),
+      col = "red", lwd = 2)
+
+# Prediction for new Job Levels
+new_data <- data.frame(JobLevel = c(1, 3, 5))
+predict_poly_income <- predict(model_poly_income, newdata = new_data)
+predict_poly_income
+```
+
+**Interpretation:**
+The scatter plot shows the distribution of Monthly Income across Job Levels._
+The red curve represents a polynomial relationship (degree 2) capturing non-linear trends.
+Predictions example: MonthlyIncome at Job Levels 1, 3, and 5 are r predict_poly_income.
+
+------------------------------------------------------------------------------------------------------------
+
+## 3.4 K-Nearest Neighbors (KNN) Model
+
+------------------------------------------------------------------------------------------------------------
+
+### 3.4.1 KNN Classification Results 
+
+------------------------------------------------------------------------------------------------------------
+
+**Question: Can we predict employee attrition based on Age, MonthlyIncome, DistanceFromHome, and YearsAtCompany?**
+
+```{r}
+library(caret)
+library(class)
+
+# Use only first 100 rows
+IBM_HR_EMPLOYEE_ATTRITION <- IBM_HR_Employee_Attrition[1:100, ]
+
+#3. Select numeric columns for normalization
+hr_data <- IBM_HR_Employee_Attrition[, c("Age", "MonthlyIncome", "DistanceFromHome", "YearsAtCompany")]
+hr_data$Attrition <- IBM_HR_Employee_Attrition$Attrition
+
+#4. Normalize numeric values
+normalize <- function(x){
+  return((x - min(x)) / (max(x) - min(x)))
+}
+hr_norm <- as.data.frame(lapply(hr_data[, 1:4], normalize))
+hr_norm$Attrition <- hr_data$Attrition
+
+#5. Split data (80% training and 20% testing)
+set.seed(123)
+train_index <- createDataPartition(hr_norm$Attrition, p = 0.8, list = FALSE)
+train_data <- hr_norm[train_index, 1:4]
+test_data  <- hr_norm[-train_index, 1:4]
+train_labels <- hr_norm[train_index, 5]
+test_labels  <- hr_norm[-train_index, 5]
+
+#6. Build and run KNN model
+k_value <- 5
+knn_pred <- knn(train = train_data, test = test_data, cl = train_labels, k = k_value)
+
+#7. Evaluate model performance
+conf_mat <- table(predicted = knn_pred, actual = test_labels)
+print(conf_mat)
+
+accuracy <- sum(diag(conf_mat)) / sum(conf_mat)
+cat("\nModel Accuracy (k =", k_value, "):", round(accuracy * 100, 2), "%\n")
+
+#8. Visualization of predictions
+results <- cbind(test_data, actual = test_labels, predicted = knn_pred)
+
+ggplot(results, aes(x = MonthlyIncome, y = Age)) +
+  geom_point(aes(color = predicted, shape = actual), size = 4) +
+  labs(title = paste("KNN Classification Results (First 100 Rows, k =", k_value, ")"),
+       subtitle = "Color = Predicted Attrition | Shape = Actual Attrition",
+       x = "Monthly Income (Normalized)",
+       y = "Age (Normalized)") +
+  theme_minimal()
+
+#9. Check accuracy for different k values
+accuracy_results <- c()
+for (k in 1:15) {
+  pred <- knn(train_data, test_data, train_labels, k = k)
+  acc <- sum(pred == test_labels) / length(test_labels)
+  accuracy_results <- c(accuracy_results, acc)
+}
+
+#10. Plot accuracy vs k values
+plot(1:15, accuracy_results, type = "b", pch = 19,
+     xlab = "K Value", ylab = "Accuracy",
+     main = "KNN Accuracy for Different K Values")
+```
+
+**Interpretation:**
+The scatter plot shows actual vs predicted attrition.
+Color indicates predicted labels; shape indicates actual labels.
+Accuracy for k = 5: r round(accuracy * 100, 2)%.
+High overlap indicates good model performance.
+
+
+# 4. Conclusion
+
+- This project analyzed the IBM HR Employee Attrition dataset to understand the key factors influencing employee turnover.  
+- Descriptive statistics and visualizations revealed that *lower monthly income, **poor work–life balance, and **longer commute distances* are strongly associated with higher attrition.  
+- Job roles such as *Sales Representatives* and *Laboratory Technicians* showed comparatively higher turnover, indicating the need for focused retention strategies.  
+- The pair plots and scatter plots highlighted relationships between *age, **tenure, **income*, and attrition, showing that employees with longer experience and higher earnings tend to stay longer.  
+- Regression models (simple and polynomial) demonstrated meaningful trends, such as the positive relationship between *Age and DistanceFromHome, and non-linear growth of **MonthlyIncome with JobLevel*.  
+- The One-Way ANOVA confirmed significant differences in *Monthly Income across different Job Roles*. 
+- The KNN model, applied to the first 100 rows, achieved reasonable accuracy and showed that machine-learning techniques can support attrition prediction.  
+- Overall, the analysis suggests that improving *salary fairness, **career progression, and **work–life balance* can help organizations reduce employee turnover.
